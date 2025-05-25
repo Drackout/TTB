@@ -754,6 +754,7 @@ GameObject:
   - component: {fileID: 938081874}
   - component: {fileID: 938081873}
   - component: {fileID: 938081875}
+  - component: {fileID: 938081876}
   m_Layer: 0
   m_Name: ServerStartHost
   m_TagString: Untagged
@@ -768,7 +769,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 938081872}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e653219e8b7b63f429dd77e15377dac8, type: 3}
   m_Name: 
@@ -845,6 +846,18 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &938081876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 938081872}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98f1bff2c1eb0224ea09ac01cd09d63b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &987556991
 GameObject:
   m_ObjectHideFlags: 0

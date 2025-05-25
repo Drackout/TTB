@@ -11,7 +11,7 @@ public class HostServerStart : MonoBehaviour
     [SerializeField] private int port = 1234;
 
     private SpriteRenderer  spriteRenderer;
-    private Socket          listenerSocket;
+    private Socket        listenerSocket;
     private Socket[]        clientSockets;
 
     [SerializeField] 
@@ -20,8 +20,10 @@ public class HostServerStart : MonoBehaviour
     int                     numOfPlayers;
     int                     playerTurn;
 
+
     void Start()
     {
+        clientSockets = new Socket[4];
         spriteRenderer = GetComponent<SpriteRenderer>();
         numOfPlayers = 0;
         playerTurn = 0;
@@ -29,29 +31,27 @@ public class HostServerStart : MonoBehaviour
 
     void Update()
     {
+        Debug.Log("num of players: " + numOfPlayers);
         if (listenerSocket == null)
         {
+            Debug.Log("REEEEEE 1: " + numOfPlayers);
             spriteRenderer.color = Color.red;
             OpenConnection();
         }
         else
         {
+            Debug.Log("REEEEEE 2: " + numOfPlayers);
             spriteRenderer.color = Color.yellow;
-            if (clientSockets == null)
+            if (clientSockets[numOfPlayers]  == null)
             {
+                Debug.Log("REEEEEE 3: " + numOfPlayers);
                 spriteRenderer.color = Color.yellow;
 
                 // Wait for a connection to be made - a new socket is created when that happens
                 try
                 {
-                    if (numOfPlayers == 0)
-                        clientSockets[0] = listenerSocket.Accept();
-                    if (numOfPlayers == 1)
-                        clientSockets[1] = listenerSocket.Accept();
-                    if (numOfPlayers == 2)
-                        clientSockets[2] = listenerSocket.Accept();
-                    if (numOfPlayers == 3)
-                        clientSockets[3] = listenerSocket.Accept();
+                    // Player 1 is the 0 in the array
+                    clientSockets[numOfPlayers] = listenerSocket.Accept();
                 }
                 catch (SocketException e)
                 {
@@ -67,18 +67,13 @@ public class HostServerStart : MonoBehaviour
                     }
                 }
 
-                if (clientSockets != null)
+                if (clientSockets[numOfPlayers] != null)
                 {
+                    Debug.Log("REEEEEE 4: " + numOfPlayers);
                     Debug.Log($"Player {numOfPlayers} Connected!");
 
-                    if (numOfPlayers == 0)
-                        clientSockets[0].SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                    if (numOfPlayers == 1)
-                        clientSockets[1].SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                    if (numOfPlayers == 2)
-                        clientSockets[2].SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                    if (numOfPlayers == 3)
-                        clientSockets[3].SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                    clientSockets[numOfPlayers].SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                    numOfPlayers++;
                 }
             }
             else 
@@ -96,6 +91,7 @@ public class HostServerStart : MonoBehaviour
         {
             // Create listener socket
             // Prepare an endpoint for the socket, at port 80
+
             IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
 
             // Create a Socket that will use TCP protocol
@@ -117,44 +113,19 @@ public class HostServerStart : MonoBehaviour
         }
     }
 
+
     int Receive(byte[] data, bool accountForLittleEndian = true)
     {
         try
         {
-            int nByteFinal = 0;
             // Normal path - received something
-            /////////// IF Player 0... 
-            if (playerTurn == 0)
-            {
-                int nBytes0 = clientSockets[0].Receive(data);
-                nByteFinal = nBytes0;
-            }
-            /////////// IF Player 1... 
-            if (playerTurn == 1)
-            {
-                int nBytes1 = clientSockets[1].Receive(data);
-                nByteFinal = nBytes1;
-            }
-            /////////// IF Player 2... 
-            if (playerTurn == 2)
-            {
-                int nBytes2 = clientSockets[2].Receive(data);
-                nByteFinal = nBytes2;
-            }
-            /////////// IF Player 3... 
-            if (playerTurn == 3)
-            {
-                int nBytes3 = clientSockets[3].Receive(data);
-                nByteFinal = nBytes3;
-            }
-
-
-            //nByteFinal 
+            /////////// IF Player 0.1.2.3... 
+                int nBytes = clientSockets[playerTurn].Receive(data);
 
             if (accountForLittleEndian && (!BitConverter.IsLittleEndian))
                 Array.Reverse(data);
 
-            return nByteFinal;
+            return nBytes;
         }
         catch (SocketException e)
         {
@@ -173,9 +144,13 @@ public class HostServerStart : MonoBehaviour
         return -1;
     }
 
+
     void ReceiveCommands()
     {
-        if (clientSocket.Connected)
+        // Receiving commands from X player
+        Debug.Log("Player Turn RECEIVE COMMANDS: " + playerTurn);
+
+        if (clientSockets[playerTurn].Connected)
         {
             var lenBytes = new byte[4];
 
@@ -212,6 +187,13 @@ public class HostServerStart : MonoBehaviour
                         transform.position += Vector3.left * 0.25f;
                         Player1Transform.position += new Vector3(-1, 0, 0);
                     }
+                    else if (command == "end")
+                    {
+                        if (playerTurn % numOfPlayers == 0)
+                            playerTurn = 0;
+                        
+                        playerTurn++;
+                    }
                     else
                     {
                         Debug.LogError($"Unknown command {command}!");
@@ -222,25 +204,40 @@ public class HostServerStart : MonoBehaviour
             {
                 try
                 {
-                    if (clientSocket.Poll(1, SelectMode.SelectRead))
-                    {
-                    }
+                    if (clientSockets[0].Poll(1, SelectMode.SelectRead)){}
+                    if (clientSockets[1].Poll(1, SelectMode.SelectRead)){}
+                    if (clientSockets[2].Poll(1, SelectMode.SelectRead)){}
+                    if (clientSockets[3].Poll(1, SelectMode.SelectRead)){}
                 }
                 catch (SocketException e)
                 {
                     Debug.LogError(e);
 
                     // Close the socket if it's not connected anymore
-                    clientSocket.Close();
-                    clientSocket = null;
+                    clientSockets[0].Close();
+                    clientSockets[1].Close();
+                    clientSockets[2].Close();
+                    clientSockets[3].Close();
+                    
+                    clientSockets[0] = null;
+                    clientSockets[1] = null;
+                    clientSockets[2] = null;
+                    clientSockets[3] = null;
                 }
             }
         }
         else
         {
             // Close the socket if it's not connected anymore
-            clientSocket.Close();
-            clientSocket = null;
+            clientSockets[0].Close();
+            clientSockets[1].Close();
+            clientSockets[2].Close();
+            clientSockets[3].Close();
+            
+            clientSockets[0] = null;
+            clientSockets[1] = null;
+            clientSockets[2] = null;
+            clientSockets[3] = null;
         }
     }
 }
