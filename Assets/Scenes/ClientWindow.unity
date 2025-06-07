@@ -550,8 +550,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 938081878}
-        m_TargetAssemblyTypeName: CliConnect1, Assembly-CSharp
+      - m_Target: {fileID: 938081877}
+        m_TargetAssemblyTypeName: CliConnect, Assembly-CSharp
         m_MethodName: goLeft
         m_Mode: 1
         m_Arguments:
@@ -634,7 +634,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -48.19995}
+  m_AnchoredPosition: {x: 0, y: -48.200012}
   m_SizeDelta: {x: 819.8114, y: 122.2812}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &272574861
@@ -657,7 +657,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Host
+  m_text: Client
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1116,8 +1116,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 938081878}
-        m_TargetAssemblyTypeName: CliConnect1, Assembly-CSharp
+      - m_Target: {fileID: 938081877}
+        m_TargetAssemblyTypeName: CliConnect, Assembly-CSharp
         m_MethodName: endTurn
         m_Mode: 1
         m_Arguments:
@@ -1879,8 +1879,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 938081878}
-        m_TargetAssemblyTypeName: CliConnect1, Assembly-CSharp
+      - m_Target: {fileID: 938081877}
+        m_TargetAssemblyTypeName: CliConnect, Assembly-CSharp
         m_MethodName: OnLaunchClicked
         m_Mode: 1
         m_Arguments:
@@ -1939,9 +1939,9 @@ GameObject:
   m_Component:
   - component: {fileID: 938081874}
   - component: {fileID: 938081875}
-  - component: {fileID: 938081878}
+  - component: {fileID: 938081877}
   m_Layer: 0
-  m_Name: ServerStartHost
+  m_Name: ClientConnection
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2017,7 +2017,7 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &938081878
+--- !u!114 &938081877
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2026,7 +2026,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 938081872}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54858c2316d7ce248aab6489fe3015f3, type: 3}
+  m_Script: {fileID: 11500000, guid: 4057caba339f598478e0effa7261a733, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   startGameScreen: {fileID: 1284379133}
@@ -2631,8 +2631,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 938081878}
-        m_TargetAssemblyTypeName: CliConnect1, Assembly-CSharp
+      - m_Target: {fileID: 938081877}
+        m_TargetAssemblyTypeName: CliConnect, Assembly-CSharp
         m_MethodName: goUp
         m_Mode: 1
         m_Arguments:
@@ -2764,8 +2764,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 938081878}
-        m_TargetAssemblyTypeName: CliConnect1, Assembly-CSharp
+      - m_Target: {fileID: 938081877}
+        m_TargetAssemblyTypeName: CliConnect, Assembly-CSharp
         m_MethodName: OnAttackClicked
         m_Mode: 1
         m_Arguments:
@@ -3506,8 +3506,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 938081878}
-        m_TargetAssemblyTypeName: CliConnect1, Assembly-CSharp
+      - m_Target: {fileID: 938081877}
+        m_TargetAssemblyTypeName: CliConnect, Assembly-CSharp
         m_MethodName: goRight
         m_Mode: 1
         m_Arguments:
@@ -3639,8 +3639,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 938081878}
-        m_TargetAssemblyTypeName: CliConnect1, Assembly-CSharp
+      - m_Target: {fileID: 938081877}
+        m_TargetAssemblyTypeName: CliConnect, Assembly-CSharp
         m_MethodName: goDown
         m_Mode: 1
         m_Arguments:

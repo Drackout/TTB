@@ -8,8 +8,9 @@ using UnityEngine.UI;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using TMPro;
+using System.Diagnostics;
 
-public class CliConnect : MonoBehaviour
+public class CliConnect1 : MonoBehaviour
 {
     private TcpClient client;
     private NetworkStream stream;
@@ -26,7 +27,7 @@ public class CliConnect : MonoBehaviour
     public TextMeshProUGUI DisplayID;
     public GameObject[] playerPrefabs;
     public GameObject[] enemyPrefabs;
-    private static int playerId;
+    private static int playerId = 1; //IT OVERWRITES everytime for no apparent reason? 
     public GameObject gameContols;
     public Button[] gameButtons;
     private int tryConn = 0;
@@ -37,6 +38,16 @@ public class CliConnect : MonoBehaviour
     
     void Start()
     {
+        //Launch headless Server (with head to test)
+        Process firstProc = new Process();
+        firstProc.StartInfo.FileName = ".\\SocketServer\\bin\\Debug\\net8.0\\SocketServer.exe";
+        firstProc.EnableRaisingEvents = true;
+        firstProc.StartInfo.CreateNoWindow = false;
+        firstProc.Start();
+
+        // wait 2 secs then connects the "host/player1"
+        Thread.Sleep(2000);
+
         while (!isConnected && tryConn < 10)
         {
             try
@@ -113,7 +124,7 @@ public class CliConnect : MonoBehaviour
             stream = new NetworkStream(socket);
             isConnected = true;
             
-            // Start a background thread to receive data
+            // Start the thread
             receiveThread = new Thread(ReceiveData);
             receiveThread.IsBackground = true;
             receiveThread.Start();
@@ -121,7 +132,6 @@ public class CliConnect : MonoBehaviour
         }
         catch (Exception ex)
         {
-            //Debug.LogError("Error connecting to server: " + ex.Message);
             infoBox.text += "\nError connecting to server: " + ex.Message;
         }
     }
@@ -140,9 +150,10 @@ public class CliConnect : MonoBehaviour
                 if (bytesReceived == 0) break;  // Connection closed
 
                 string msg = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
-                //Debug.Log("Server: " + msg);
                 infoBox.text += "\nServer: " + msg;
 
+
+                // Handle server messages and update game and UI
                 if (msg.Contains("PlayerID"))
                 {
                     int incomeID = Convert.ToInt16(msg.Split(':')[1]);
@@ -150,7 +161,6 @@ public class CliConnect : MonoBehaviour
                     {
                         playerId = incomeID;
                         DisplayID.text = playerId.ToString();
-                        //Debug.Log($"Iam player {playerId}");
                         infoBox.text += $"\nIam player {playerId}";
 
                         for (int i = 0; i < playerId - 1; i++)
@@ -166,11 +176,8 @@ public class CliConnect : MonoBehaviour
                 }
                 else if (msg.Contains("Game started"))
                 {
-                    //should be 1 ? 
                     startGameScreen.SetActive(false);
                     gameContols.SetActive(true);
-                    //Debug.Log("Game started! It's player " + message.Split(':')[2] + "'s turn.");
-                    //infoBox.text += "------------------------------------------";
                     infoBox.text += "\nGame started! Player " + msg.Split(':')[1] + "'s turn.";
 
                     if (playerId == Convert.ToInt16(msg.Split(':')[1]))
@@ -186,12 +193,11 @@ public class CliConnect : MonoBehaviour
                 }
                 else if (msg.Contains("Not your turn"))
                 {
-                    //Debug.Log(message);
                     infoBox.text += "\n" + msg;
                 }
                 else if (msg.Contains("No Energy"))
                 {
-                    //Debug.Log(message);
+                    //Already writes the message
                     //infoBox.text += "\n"+msg;
                 }
                 else if (msg.Contains("Waiting for Host"))
@@ -231,10 +237,6 @@ public class CliConnect : MonoBehaviour
                                                                         playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.z);
                     }
 
-                    //infoBox.text += "\n" + msg;
-                    // MOVE PLAYER TRANSFORM TO NEW POSITIONS
-                    // NEED TESTING
-                    //playerPosition.transform.Translate(Vector3.forward * float.Parse(msg.Split(':')[1]) * Time.deltaTime);
                 }
                 else if (msg.Contains("Next turn"))
                 {
@@ -254,13 +256,6 @@ public class CliConnect : MonoBehaviour
                     //Debug.Log(message);
                 }
 
-
-
-
-
-                // Update game by server messages
-                // NOT WORKING BUT WORKS IF OUTSIDE ^
-                HandleServerMessage(msg);
             }
             catch (SocketException e)
             {
@@ -277,45 +272,6 @@ public class CliConnect : MonoBehaviour
         
     }
 
-    // Handle server messages and update the UI accordingly
-    void HandleServerMessage(string message)
-    {
-        //Debug.Log("REEEEEE5: " + message + ":"+Convert.ToInt16(message.Split(':')[2]));
-        //if (message.Contains("PlayerID"))
-        //{
-        //    playerId = Convert.ToInt16(message.Split(':')[2]);
-        //    Debug.Log($"Iam player {playerId}");
-        //}
-        //else
-        //if (message.Contains("Game started"))
-        //{
-        //    //should be 1 ? 
-        //    startGameScreen.SetActive(false);
-        //    //Debug.Log("Game started! It's player " + message.Split(':')[2] + "'s turn.");
-        //    infoBox.text += "\nGame started! It's player " + message.Split(':')[2] + "'s turn.";
-        //    playerPosition.transform.position = transform.position;
-        //}
-        //else if (message.Contains("Not your turn"))
-        //{
-        //    //Debug.Log(message);
-        //    infoBox.text += "\n"+message;
-        //}
-        //else if (message.Contains("Waiting for Host"))
-        //{
-        //    //Debug.Log(message);
-        //    infoBox.text += "\n"+message;
-        //}
-        //else if (message.Contains("CanMove"))
-        //{
-        //    // MOVE PLAYER TRANSFORM TO NEW POSITIONS
-        //    // NEED TESTING
-        //    playerPosition.transform.Translate(Vector3.forward * float.Parse(message.Split(':')[1]) * Time.deltaTime);
-        //}
-        //else
-        //{
-        //    //Debug.Log(message);
-        //}
-    }
 
 
 
@@ -336,7 +292,7 @@ public class CliConnect : MonoBehaviour
 
     // Button for Launch (only Player 1 can launch)
     public void OnLaunchClicked()
-    {        
+    {
         if (playerId == 1)
         {
             SendAction("launch");
@@ -344,7 +300,6 @@ public class CliConnect : MonoBehaviour
         else
         {
             infoBox.text += "\nOnly Player 1 can launch the game.";
-            //Debug.Log("Only Player 1 can launch the game.");
         }
     }
 
@@ -380,10 +335,10 @@ public class CliConnect : MonoBehaviour
     // End turn
     public void endTurn()
     {
-        foreach (Button btn in gameButtons)
-        {
-            btn.interactable = false;
-        }
+        //foreach (Button btn in gameButtons)
+        //{
+        //    btn.interactable = false;
+        //}
         SendAction("endTurn");
     }
 

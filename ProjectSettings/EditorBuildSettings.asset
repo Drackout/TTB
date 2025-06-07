@@ -6,15 +6,18 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/HostWindow.unity
-    guid: 73c871878cebae84db156c37afa8367a
-  - enabled: 1
-    path: Assets/Scenes/TTB.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
     path: Assets/Scenes/MainMenu.unity
     guid: d8b272bcb2a3a904ca762198ff01a06a
   - enabled: 1
+    path: Assets/Scenes/HostWindow.unity
+    guid: 73c871878cebae84db156c37afa8367a
+  - enabled: 1
+    path: Assets/Scenes/ClientWindow.unity
+    guid: 6e74106cc0d156d478f9391acade1b41
+  - enabled: 0
+    path: Assets/Scenes/TTB.unity
+    guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 0
     path: Assets/Scenes/ServerList.unity
     guid: e1b992b4baec0984f95fb0b87d525e05
   m_configObjects:

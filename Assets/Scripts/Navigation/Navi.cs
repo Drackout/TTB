@@ -12,7 +12,7 @@ public class Navi : MonoBehaviour
     public void GoClient()
     {
         Debug.Log("Multiplayer (Client)");
-        SceneManager.LoadScene("ServerList");
+        SceneManager.LoadScene("ClientWindow");
     }
 
     public void GoHost()
