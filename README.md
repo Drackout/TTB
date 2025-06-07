@@ -6,11 +6,9 @@
 O jogo criado não está a 100% implementado, porém a criação do servidor e ligação dos clientes com raw sockets está funcional (mesmo não tendo o melhor código ou a maneira mais correta de fazer várias coisas).
 
 ## Descrição técnica:
-TCP
 Foram utilizadas as __Raw Sockets__ com o protocolo __TCP__ para criar as ligações do servidor e dos clients. Foi escolhido fazer o projeto com o protocolo TCP, por este exigir as conexões como deve ser e porque garante que as informações ao serem enviadas serão entregues e que quase garantidamente chegaram sem erros, e também pela estabilidade e por não se querer perder mensagens sendo estas importantes ou não.
 
 A __desvantagem__ do protocolo TCP é que este poderá chegar ao ponto de ficar bastante mais lento se o fluxo de informação enviada for maior, visto que este projeto era para ser algo pequeno. A possivel perda de dados do protocolo UDP e a sua ordem "aleatoria" de chegada da informação não ajudava com o que se queria desenvolver, possivelmente dando origem a multiplos futuros erros e uma grande perda de tempo para os corrigir. Mesmo sendo mais rápido, seria preciso fazer muitas mais verificações, fazendo com que a sua rapidez acabasse por não compensar. 
-Foi decidido utilizar o TCP, 
 
 O __Multithread__ também foi aprendido e utilizado para que quando existisse uma ligação ao servidor, este fosse aceite e inserido no seu próprio thread, fazendo com que os seus inputs e dados, sejam tratados independentemente, facilitando assim as várias conexões ao servidor e permitindo que cada client mexa no seu jogo sem impactar os outros ou com que a aplicação bloqueie à espera que seja o seu turno.     
 
@@ -448,6 +446,10 @@ public  void  endTurn()
 	SendAction("endTurn");
 }
 ```
+
+# Diagrama de arquitectura de redes
+![rede](https://imagizer.imageshack.com/img923/7040/t7NXg5.jpg)
+
 
 
  
