@@ -37,7 +37,7 @@ Uma possível __desvantagem__ do protocolo TCP poderia ser um aumento na latênc
 O __RPC__ (Remote Procedure Call) foi o modelo de comunicação utilizado para os pacotes de informação que são enviados, neste caso enviando a função que queremos executar do outro lado. Por exemplo, no caso do jogador querer andar para um lado, este envia o nome da função a ser executada para o servidor, entretanto o servidor irá executar a função e retornará uma resposta se pode ou não efetuar o movimento. 
   
 
-O __Multithread__ foi utilizado para quando um cliente se conecta ao servidor, este faz com que seja criado um thread próprio para esse jogador. Isto faz com que os seus inputs e dados, sejam tratados independentemente, facilitando assim as várias conexões ao servidor e permitindo que cada client mexa no seu jogo sem impactar os outros ou com que a aplicação bloqueie à espera que seja o seu turno. E assim fazendo com multiplos jogadores tenham acesso à aplicação ao mesmo tempo, por exemplo (algo que não está no jogo) seria, o permitir que enquanto um está a fazer o seu turno, os outros possam estar a ver o mapa ou as habilidades de outro jogador.
+O __Multithread__ foi utilizado para quando um cliente se conecta ao servidor, este faz com que seja criado um thread próprio para esse jogador. Isto faz com que os seus inputs e dados, sejam tratados independentemente, facilitando assim as várias conexões ao servidor e permitindo que cada client mexa no seu jogo sem impactar os outros ou com que a aplicação bloqueie à espera que seja o seu turno. E assim fazendo com múltiplos jogadores tenham acesso à aplicação em simultâneo, por exemplo (algo que não está no jogo) seria, o permitir que enquanto um está a fazer o seu turno, os outros possam estar a ver o mapa ou as habilidades de outro jogador.
 
   
 Para enviar as mensagens utilizando o modelo RPC, tanto no cliente como no servidor, foram criadas 2 classes para o cliente e 2 classes para o servidor, cada uma delas server para enviar e receber os pacotes de informação, 
@@ -88,48 +88,50 @@ public  class  PlayerCommandSend
 	public  string[] extra;
 }
 ```
-Contudo no cliente, este estando a ser utilizado o Unity, é necessário incluir o __[Serializable]__ para que este seja possivel converter em bytes e funcionar com o JsonUtility, fazendo assim com que funcione da mesma maneira que o servidor utilizando o JsonSerializer da biblioteca Json.
+
+Contudo, no cliente, este estando a ser utilizado o Unity, é necessário incluir o __[Serializable]__ para este ser possível converter em bytes e funcionar com o JsonUtility, fazendo assim com que funcione da mesma maneira que o servidor utilizando o JsonSerializer da biblioteca Json.
 
 O receber uma mensagem, seja no cliente ou no servidor, segue os seguintes passos:
-- É feita uma primeira verificação dos 4 bytes recebidos numa mensagem para que não haja uma possivel manipulação dos bytes enviados e para saber qual o tamanho da mensagem a receber. Primeiro é criado um array de 4 bytes que recebe os primeiros 4 bytes de uma mensagem. 
+- É feita uma primeira verificação dos 4 bytes recebidos numa mensagem para que não haja uma possível manipulação dos bytes enviados e para saber qual o tamanho da mensagem a receber. Primeiro é criado um array de 4 bytes que recebe os primeiros 4 bytes de uma mensagem. 
 - Segundo, é guardado o tamanho da verdadeira mensagem, convertendo-a para um valor inteiro. 
-- Com o  tamanho da mensagem que foi guardado, este usa esse valor para criar um novo array the bytes, que depois irá receber a mensagem na totalidade no formato Json.
-- Após termos a mensagem completa, esta é convertida para uma string com UTF8 para ter acesso a todos os characteres incluindo os especiais.
-- Por fim, faz-se a deserialização da mensagem em Json, e utilizando a classe que foi criada para o  RPC, esta irá receber as informações sendo no cliente ou servidor, podendo aceder as informações em sepatado por cada variável da classe.  
+- Com o tamanho da mensagem que foi guardado, este usa esse valor para criar um novo array de bytes, que depois irá receber a mensagem na totalidade no formato Json.
+- Após termos a mensagem completa, esta é convertida para uma string com UTF8 para ter acesso a todos os caracteres incluindo os especiais.
+- Por fim, faz-se a desserialização da mensagem em Json, e utilizando a classe que foi criada para o  RPC, esta irá receber as informações sendo no cliente ou servidor, podendo aceder as informações em separado por cada variável da classe.  
 
-Ambos o servidor e os seus clientes, possuem a mesma lógica, sendo esta o estarem sempre disponiveis para receber qualquer mensagem, sendo possivel quando uma mensagem é trocada (entre um cliente e servidor e vice-versa), o que receber irá usar as informações e internamente fazer o que é pedido na mensagem. 
+Tanto o servidor e os seus clientes, possuem a mesma lógica, sendo esta o estarem sempre disponíveis para receber qualquer mensagem, sendo possível quando uma mensagem é trocada (entre um cliente e servidor, e vice-versa), o que receber irá usar as informações e internamente fazer o que é pedido na mensagem. 
 
-Foi criada uma classe __Entity.cs__ no servidor, para que cada jogador e inimigo tenha a sua vida, energia, movimento e o dano. Esta classe foi criada para facilitar a gestão de cada entidade dentro do jogo, permitindo saber os seus dados e fazer a gestão dos mesmos conforme o jogo vai decorrendo e os clientes vão enviando ações.
+Foi criada uma classe __Entity.cs__ no servidor, para que cada jogador e inimigo tenha a sua vida, energia, movimento e o dano. Esta classe foi criada para facilitar a gestão de cada entidade no jogo, permitindo saber os seus dados e fazer a gestão dos mesmos conforme o jogo vai decorrendo e os clientes vão enviando ações.
   
 
-## O funcionamento do servidor começa por:
+## 
+O funcionamento do servidor começa por:
 
-__1) Instanciar e inicializar variáveis globais__, desde uma lista de clients, outra lista com os IDs dos jogadores, turno, rondas, número máximo de jogadores e também cria uma lista com as instancias dos jogadores, estas que serão modificadas conforme o decorrer do jogo com ações recebidas dos clientes.
+__1) Instanciar e inicializar variáveis globais__, desde uma lista de clientes, outra lista com os IDs dos jogadores, turno, rondas, número máximo de jogadores e também cria uma lista com as instâncias dos jogadores, estas que serão modificadas conforme o decorrer do jogo com ações recebidas dos clientes.
 
-__2) Criação do endpoint e de um listener__, começa-se por criar uma socket
+__2) Criação do endpoint e de um listener__, começa-se por criar um socket
 ```
 Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 ```
 
-Esta socket usa o IPv4 e é do tipo Stream e com o protocolo TCP, fazendo com que se obtenha um fluxo contínuo de dados com entrega garantida e ordenada dos dados. Logo de seguida é criado o EndPoint, onde os clientes se vão conectar, tendo este um port (2100) e um IP em que estamos a utilizar o localhost, este permite qualquer conexão local.
+Este socket usa o IPv4 e é do tipo Stream e com o protocolo TCP, fazendo com que se obtenha um fluxo contínuo de dados com entrega garantida e ordenada dos dados. Logo de seguida é criado o EndPoint, onde os clientes se vão conectar, tendo este um port (2100) e um IP em que estamos a utilizar o localhost, este permite qualquer conexão local.
 
 ```
 IPEndPoint(IPAddress.Any, 2100);
 listener.Bind(localEndPoint);
 listener.Listen(maxPlayers);
 ```
-Fazendo o .Bind() para ativar a socket comforme o IP e o port fornecido e depois o .Listen(maxPlayers), que serve para estar à escuta de ligações dos clientes até um número dados, sendo este o maxPlayers, faz com que apenas o número máximo de jogadores seja permitido conectar-se, e fazendo com que os restantes não consigam estabelecer uma conexão ao servidor.
-
+Fazendo o .Bind() para ativar a socket conforme o IP e o port fornecido e depois o .Listen(maxPlayers), que serve para estar à escuta de ligações dos clientes até um número dados, sendo este o maxPlayers, faz com que apenas o número máximo de jogadores seja permitido conectar-se, e fazendo com que os restantes não consigam estabelecer uma conexão ao servidor.
   
 
-__3) Ouvir e aceitar conexões__, após o servidor estar à espera de conexões de clients, é efetuado um ciclo que fará com que cada conexão recebida, seja aceite e de seguida adicionada a uma lista de sockets chamada clients, que será utilizada para chamar o respetivo jogador e enviar informação e também atribuindo o número de chegada como o ID do jogador. No final é criado uma Thread cada nova conexão, fazendo com que se trate de todos os jogadores em simultaneo.
+
+__3) Ouvir e aceitar conexões__, após o servidor estar à espera de conexões de clientes, é efetuado um ciclo que fará com que cada conexão recebida, seja aceite e de seguida adicionada a uma lista de sockets chamada clients, que será utilizada para chamar o respetivo jogador e enviar informação e também atribuindo o número de chegada como o ID do jogador. No final é criado uma Thread cada nova conexão, fazendo com que se trate de todos os jogadores em simultâneo.
 
 ```
 listener.Accept();
 clients.Add(client);
 assignedId = clients.Count;
 playerIds.Add(assignedId);
-Thread clientThread = new Thread(() => HandleClient(client, assignedId));
+Thread clientThread = new Thread(() = HandleClient(client, assignedId));
 clientThread.Start();
 Broadcast($"Player {assignedId} connected, updatePlayerList ");
 
@@ -144,15 +146,16 @@ static  void  SAttachIDtoNewPlayer(Socket  client, int  newPlayerID)
 {
 	Console.WriteLine($"Give ID to player:{newPlayerID}");
 	Send(client, action: "getid", playerId: newPlayerID);
+
 }
 ```
 Logo de seguida envia uma funcionalidade e uma mensagem para todos os clientes conectados, fazendo com que estes atualizarem a lista de jogadores e informando a conexão de um novo jogador.
 
   
 
-__4.1) Receber e processar as informações dos clientes__, o servidor começa por estar num ciclo que corre enquanto o client estiver conectado e enquanto o número de rondas for inferior ao valor estipulado.
+__4.1) Receber e processar as informações dos clientes__, o servidor começa por estar num ciclo que corre enquanto o cliente estiver conectado e enquanto o número de rondas for inferior ao valor estipulado.
 
-Após recebermos uma mensagem Json e inserido os seus valores num objecto da devida class utilizando a deserialização, a mensagem fica partida em, "playerID" referente a quem enviou a mensagem, "action" para sabermos o tipo de ação do jogador, "target" se ataque quem atacar ou se andar, para que direção e por fim um array de strings "extra", permitindo que sejam enviadas outras informações se visto que necessário.  
+Após recebermos uma mensagem Json e inserido os seus valores num objeto da devida classe utilizando a desserialização, a mensagem fica partida em, "playerID" referente a quem enviou a mensagem, "action" para sabermos o tipo de ação do jogador, "target" se ataque quem atacar ou se andar, para que direção e por fim um array de strings "extra", permitindo que sejam enviadas outras informações se visto que necessário.
 ```
 command  =  JsonSerializer.Deserialize<ClientCommand>(msg);
 
@@ -161,7 +164,7 @@ command.action;
 command.target;
 command.extra;
 ```
-__4.2) Enviar informações para os clients__, existem duas maneiras de enviar informações aos clientes, uma que envia apenas ao próprio client __Send()__ em que utilizando o modelo RPC, usamos uma classe, para guardar os dados que vêm como parametros, e logo de seguida converter em Json, e depois de estar em Json, converte-se o mesmo em bytes. Como a secção de receber uma mensagem está à espera primeiro do tamanho da mensagem e só depois a mensagem em si, é enviado o tamanho da mensagem e a mensagem logo de seguida.
+__4.2) Enviar informações para os clientes__, existem duas maneiras de enviar informações aos clientes, uma que envia apenas ao próprio cliente __Send()__ em que utilizando o modelo RPC, usamos uma classe, para guardar os dados que vêm como parâmetros, e logo de seguida converter em Json, e após estar em Json, converte-se o mesmo em bytes. Como a secção de receber uma mensagem está à espera primeiro do tamanho da mensagem e só depois a mensagem em si, é enviado o tamanho da mensagem e a mensagem logo de seguida.
 - Send():
 ```
 static  void  Send(Socket  client, string  action  =  "", string  message  =  "", int  playerId  =  0, string[] extra  =  null)
@@ -196,13 +199,14 @@ static  void  Send(Socket  client, string  action  =  "", string  message  =  ""
 	}
 }
 ```
-Ao fazer a conversão do Objecto para Json é utilizado ```var setting = new JsonSerializerOptions { PropertyNamingPolicy = null }; ``` para que os campos que são passados não vão Camel Case. 
 
-Isto foi efetuado por existirem descrepansias do Json do c# e o Json do Unity, tais como no cliente (Unity) para converter em Json usa-se ```JsonUtility.ToJson(msg);``` enquanto que no C# o ```JsonSerializer.Serialize(msg)```, este que  faz com que os campos do Json estejam em Camel Case contráriamente ao .Tojson().
+Ao fazer a conversão do Objeto para Json é utilizado ```var setting = new JsonSerializerOptions { PropertyNamingPolicy = null }; ``` para que os campos que são passados não vão Camel Case. 
 
-Também é possivel enviar uma mensagem para todos os clientes, em que se baseia na função Send(), só que em vez de receber um socket, irá percorrer a lista de clients que é uma lista de sockets, e para cada um deles irá enviar a mensagem.
+Isto foi efetuado por existirem discrepâncias do Json do c# e o Json do Unity, tais como no cliente (Unity) para converter em Json usa-se ```JsonUtility.ToJson(msg);``` enquanto que no C# o ```JsonSerializer.Serialize(msg)```, este que  faz com que os campos do Json estejam em Camel Case contrariamente ao .Tojson().
 
-Em baixo foram criados dois auxiliares para enviar mensagens simples sem ações para os clientes para que sejam representadas nas respetivas caixas de texto.
+Também é possível enviar uma mensagem para todos os clientes, em que se baseia na função Send(), só que em vez de receber um socket, irá percorrer a lista de clientes que é uma lista de sockets, e para cada um deles irá enviar a mensagem.
+
+Em baixo foram criados dois auxiliares para enviar mensagens simples sem ações para os clientes para serem representadas nas respetivas caixas de texto.
 ```
 static  void  BroadcastMessage(string  msg)
 {
@@ -216,8 +220,8 @@ static  void  SendMessage(Socket  client, string  msg)
 ```
   
 
-__4.3) Processamento das mensagens recebidas__, após recebermos a mensagem, como dito anteriormente, esta será retirada do Json e posta num objecto e que logo de seguida será utilizada a parte desse objecto que possui a ação. 
-Tendo a ação do cliente que se pretende executar como mensagem no servidor, é feito um Switch com todas as ações possiveis. 
+__4.3) Processamento das mensagens recebidas__, após recebermos a mensagem, como dito anteriormente, esta será retirada do Json e posta num objeto e que logo de seguida será utilizada a parte desse objeto que possui a ação. 
+Tendo a ação do cliente que se pretende executar como mensagem no servidor, é feito um Switch com todas as ações possíveis.
 ```
 switch (command.action)
 {
@@ -242,12 +246,13 @@ switch (command.action)
 		continue;
 }
 ```
+
 Cada uma das ações corresponde ao que o jogador pode fazer do seu lado, seja andar com o seu personagem, atacar, começar o jogo ou mesmo terminar o seu turno.
 
 Todas as ações que foram pedidas pelo cliente e efetuadas, será sempre enviada uma mensagem para todos os jogadores a dizer o que se passou no turno, dizendo qual foi o jogador e a sua ação. 
 
-As acções que um cliente pode pedir são, 
-- __"launch"__ que chama a função SGameStart(), esta que recebe o socket de quem enviou a mensagem, no caso de não existirem jogadores suficientes para o informar. Esta função irá verificar quantos jogadores estão conectados ao servidor, irá colocar a variável do inicio do jogo a "True" e enviar uma ação a todos os clientes para que este mostre o jogo em sí.
+As ações que um cliente pode pedir são, 
+- __"launch"__ que chama a função SGameStart(), esta que recebe o socket de quem enviou a mensagem, no caso de não existirem jogadores suficientes para o informar. Esta função irá verificar quantos jogadores estão conectados ao servidor, irá colocar a variável do início do jogo a "True" e enviar uma ação a todos os clientes para este mostrar o jogo em si.
 
 ```
 static  void  SGameStart(Socket  client)
@@ -260,9 +265,10 @@ static  void  SGameStart(Socket  client)
 	}
 	else
 		Send(client, message: $"Need more players - {clients.Count}/{maxPlayers}");
+
 }
 ```
-- __"move"__ que chama a função SMove(), começa por preparar as informações recebidas do cliente, sendo estas, qual jogador está a ser utilizado, a sua energia e qual o seu movimento, estes dados vindo todos da sua class. A energia necessária para efetuar uma ação de movimento é de 20, se for possível o jogo efetua o movimento e retira do seu objecto, se não for possivel, o jogador que tentou efetuar a ação é notificado que não tem energia suficiente.
+- __"move"__ que chama a função SMove(), começa por preparar as informações recebidas do cliente, sendo estas, qual jogador está a ser utilizado, a sua energia e qual o seu movimento, estes dados vindo todos da sua classe. A energia necessária para efetuar uma ação de movimento é de 20, se for possível o jogo efetua o movimento e retira do seu objeto, se não for possível, o jogador que tentou efetuar a ação é notificado que não tem energia suficiente.
 ```
 static  void  SMove(Socket  client, int  playerId, string  target)
 {
@@ -273,7 +279,7 @@ static  void  SMove(Socket  client, int  playerId, string  target)
 		int  movement  =  playersPrefabInfo[IDPrefab].getMovement();
   
 		string[] extraSend;
-		if (energy  >=  20)
+		if (energy  =  20)
 		{
 			playersPrefabInfo[IDPrefab].takeEnergy(20);
 			string  energyLeft  =  playersPrefabInfo[IDPrefab].getEnergy().ToString();
@@ -286,10 +292,11 @@ static  void  SMove(Socket  client, int  playerId, string  target)
 			Send(client, message: $"Not enough Energy! Player energy: {energy}");
 		}
 	}
+
 }
 ```
 
--  __"attack"__ que chama a função SAttack(), e parecida com a função de movimento, começa por preparar as informações necessárias e também verifica a energia do jogador, neste caso necessita de 30, não tendo energia  irá notificar o jogador, no caso de ter energia, faz-se a distinção se está a ser atacado o inimigo ou um outro jogador, e também é informado se apenas fez dano ou se deu o golpe final. Após termos todas as informações, é efetuada uma mensagem para todos os jogadores com o que aconteceu.
+-  __"attack"__ que chama a função SAttack(), e parecida com a função de movimento, começa por preparar as informações necessárias e também verifica a energia do jogador, neste caso necessita de 30, não tendo energia irá notificar o jogador, no caso de ter energia, faz-se a distinção se está a ser atacado o inimigo ou um outro jogador, e também é informado se apenas fez dano ou deu-se o golpe final. Após termos todas as informações, é efetuada uma mensagem para todos os jogadores com o que aconteceu.
 ```
 static  void  SAttack(string  target, int  playerId, int  attacker,Socket  client)
 {
@@ -301,7 +308,7 @@ static  void  SAttack(string  target, int  playerId, int  attacker,Socket  clien
 	string[] exHp  =  null;
 	string  actionSend;
 	int  energy  =  playersPrefabInfo[playerId  -  1].getEnergy();
-	if (energy  >=  30)
+	if (energy  =  30)
 	{
 		if (unit  ==  "enemy")
 		{
@@ -316,7 +323,7 @@ static  void  SAttack(string  target, int  playerId, int  attacker,Socket  clien
 			exHp  =  new  string[] { hpRemaining.ToString(), (energy-30).ToString(), attacker.ToString()};	
 		}
 
-		if (hpRemaining  >  0)
+		if (hpRemaining    0)
 		actionSend  =  "attack";
 		else
 		actionSend  =  "killed";
@@ -329,6 +336,7 @@ static  void  SAttack(string  target, int  playerId, int  attacker,Socket  clien
 	{
 		Send(client, message: $"Not enough Energy! Player energy: {energy}");
 	}
+
 }
 ```
  
@@ -350,6 +358,7 @@ static  void  SEndTurn()
   
 	int  nextPlayerId  =  playerIds[currentTurn];
 	Broadcast(currentEnergy, "nextturn", nextPlayerId);
+
 }
 ``` 
 No caso de ser inserida uma ação que o servidor não reconheça, também é enviada uma mensagem a informar o acontecimento.
@@ -359,6 +368,7 @@ if (playerIds[currentTurn] !=  playerId)
 {
 	SendMessage(client, "Not your turn.");
 	continue;
+
 }
 ```
 
@@ -366,20 +376,20 @@ if (playerIds[currentTurn] !=  playerId)
 ## Os Clientes:
 Todos os clientes, são tratados da mesma forma, seja este o anfitrião ou apenas um cliente, 
 
-Para ser possível lançar o jogo, este tem de ser o Host, ou seja, o primeiro jogador a conectar-se ao servidor, também é necessário ter todos os jogadores dentro do servidor, caso não aconteça o servidor alerta ao host que ainda faltam jogadores.
+Para ser possível lançar o jogo, este tem de ser o Host, ou seja, o primeiro jogador a conectar-se ao servidor, também é necessário ter todos os jogadores no servidor, caso não aconteça o servidor alerta ao host que ainda faltam jogadores.
 
-Apenas com o iniciar do jogo, o servidor agora começa a poder processar as ações dos clients, recebendo o movimento, os ataques e quando estes querem terminar o seu turno. No exemplo do jogador querer andar, irá enviar ao servidor que pretende andar numa direção e o servidor sabendo quanto é que a sua entidade consegue andar, irá validar com a sua energia restante se ainda tem energia para andar ou não.
+Apenas com o iniciar do jogo, o servidor agora começa a poder processar as ações dos clientes, recebendo o movimento, os ataques e quando estes querem terminar o seu turno. No exemplo do jogador querer andar, irá enviar ao servidor que pretende andar numa direção e o servidor sabendo quanto é que a sua entidade consegue andar, irá validar com a sua energia restante se ainda tem energia para andar ou não.
 
 
 No Update() do Unity, foi criado algo que serve para executar certas funcionalidades do Unity (Instanciate(), mudar a cor de uma imagem entre outras funcionalidades), que não é permitido correr numa Thread à parte e é necessário correr na main Thread do Unity. Foi criado para quando um jogador entra no servidor e este nos diz que entrou mais um jogador, para instanciar um GameObject de UI na lista de jogadores para sabermos quantos estão conectados de uma maneira visual.
 
   
 
-__1) Instanciar e inicializar variáveis globais__, multiplas variáveis são insanciadas, estas que são utilizadas tanto para UI como para obter as prefabs dos jogadores, guardar a sua socket o seu ID entre outras coisas necessárias que serão modificadas conforme o decorrer do jogo.
+__1) Instanciar e inicializar variáveis globais__, múltiplas variáveis são instanciadas, estas sendo utilizadas tanto para UI como para obter as prefabs dos jogadores, guardar a sua socket o seu ID entre outras coisas necessárias que serão modificadas conforme o decorrer do jogo.
 
   
 
-__2) (Host) Iniciar o servidor__ Quando iniciado como host, é executado um processo que lança o servidor, este que está na pasta do client, e foi deixado com a opção de manter a janela a aparecer (mantida para debug e testes), mas com a possibilidade de remover a qualquer altura.
+__2) (Host) Iniciar o servidor__ Quando iniciado como host, é executado um processo que lança o servidor, este que está na pasta do cliente, e foi deixado com a opção de manter a janela a aparecer (mantida para debug e testes), mas com a possibilidade de remover a qualquer altura.
 
 ```
 Process firstProc = new Process();
@@ -390,7 +400,7 @@ firstProc.Start();
 yield return new WaitForSeconds(2f);
 ```
 
-Após lançar o servidor, o client espera 2 segundos utilizando o ```yield return new WaitForSeconds(2f);``` depois tenta conectar-se, verifica se não tem uma conexão efetuada e quantas tentativas foram efetuadas. Se não conseguir conectar, irá tentar 10 vezes com um intervalo de 1 segundo entre tentativas.
+Após lançar o servidor, o cliente espera 2 segundos utilizando o ```yield return new WaitForSeconds(2f);``` depois tenta conectar-se, verifica se não tem uma conexão efetuada e quantas tentativas foram efetuadas. Se não conseguir conectar, irá tentar 10 vezes com um intervalo de 1 segundo entre tentativas.
 
 ```
 while (!isConnected && tryConn < 10)
@@ -407,7 +417,7 @@ while (!isConnected && tryConn < 10)
 }
 ```
 
-__3) Conectar ao servidor__, é utilizado o DNS para obter o endereço IP do servidor a juntar, que neste caso é o localhost, mas se fosse um google.pt, iria converter o seu nome para o devido IP. logo de seguida é utilizado o IP obtido e faz-se com que todos os clients que se juntem a utilizarem o IPv4, buscando o "AddressFamily.InterNetwork" em vez do "AddressFamily.InterNetworkV6". O endereço IP obtido previamente, é utilizado para a criação de um EndPoint, com o mesmo port que o servidor possui.
+__3) Conectar ao servidor__, é utilizado o DNS para obter o endereço IP do servidor a juntar, que neste caso é o localhost, mas se fosse um google.pt, iria converter o seu nome para o devido IP. logo de seguida é utilizado o IP obtido e faz-se com que todos os clientes que se juntem a utilizarem o IPv4, buscando o "AddressFamily.InterNetwork" em vez do "AddressFamily.InterNetworkV6". O endereço IP obtido previamente, é utilizado para a criação de um EndPoint, com o mesmo port que o servidor possui.
 
 ```
 for (int i = 0; i < ipHost.AddressList.Length; i++)
@@ -422,7 +432,7 @@ for (int i = 0; i < ipHost.AddressList.Length; i++)
 }
 ```
 
-E também é criada a socket que fica associada ao servidor e à qual o client vai formar a conexão.
+E também é criada a socket que fica associada ao servidor e à qual o cliente vai formar a conexão.
 
 Com a conexão ao servidor efetuada, é criada uma Thread para começar a receber e enviar mensagens para o servidor.
 
@@ -432,9 +442,10 @@ receiveThread.IsBackground = true;
 receiveThread.Start();
 ```
 
-__4) Receber dados do servidor__, tal como dito anteriormente, a obtenção dos dados vindos do servidor é efetuado da mesma maneira que o servidor tendo em conta o modelo RPC, enviando as duas mensagens, sendo o cumprimento da mensagem e a mensagem em sí, à maneira de colocar em Json e converter no objeto para depois usarmos os dados conforme necessário.
 
-O ID do jogador é obtido assim que o client se conecta ao servidor, o servidor envia uma ação para o cliente com o nome "getid" e também o ID do jogador como parametro, irá ser invocada a respetiva função __AGetID()__, que atribui o valor fornecido pelo servidor ao cliente como o seu ID.
+__4) Receber dados do servidor__, tal como dito anteriormente, a obtenção dos dados vindos do servidor é efetuado da mesma maneira que o servidor tendo em conta o modelo RPC, enviando as duas mensagens, sendo o comprimento da mensagem e a mensagem em sí, à maneira de colocar em Json e converter no objeto para depois usarmos os dados conforme necessário.
+
+O ID do jogador é obtido assim que o cliente se conecta ao servidor, o servidor envia uma ação para o cliente com o nome "getid" e também o ID do jogador como parâmetro, irá ser invocada a respetiva função __AGetID()__, que atribui o valor fornecido pelo servidor ao cliente como o seu ID.
 
 ```
 public void AGetID(int newID)
@@ -460,7 +471,7 @@ public void AGetID(int newID)
   
 Depois de todos os clientes já terem recebido os seus devidos IDs, o anfitrião pode começar o jogo, que irá enviar uma mensagem ao servidor com a ação "launch" que será verificada pelo servidor e respondido se o jogo vai começar ou se faltam jogadores. Se outro jogador tentar começar o jogo sem ser o anfitrião, o jogo irá informar que só o jogador 1 consegue lançar o jogo
 
-Outra mensagem que os clientes podem receber é, se o jogo já comecou, o que faz com que comece para todos os clientes, escondendo a lista de jogadores onde está o botão para "Start Game" e mostrando os botões que o jogador pode carregar para mexer o seu personagem. Também começa por comparar o ID atual com o ID que vem do servidor para saber qual o jogador a jogar neste turno.
+Outra mensagem que os clientes podem receber é, se o jogo já começou, o que faz com que comece para todos os clientes, escondendo a lista de jogadores onde está o botão para "Start Game" e mostrando os botões que o jogador pode carregar para mexer o seu personagem. Também começa por comparar o ID atual com o ID que vem do servidor para saber qual o jogador a jogar neste turno.
 
 Após perguntarmos para lançar o jogo e se a resposta for positiva, o servidor envia a todos os jogadores a ação de "gamestart" que chama a função __AGameStart()__ e começando assim o jogo para todos os clientes
 ```
@@ -486,7 +497,7 @@ public void AGameStart(int playerTurn)
 ```
 
 
-__5) Enviar dados para o servidor__, é semelhante ao enviar dados do servidor para o cliente, convertendo a mensagem em Json, depois em bytes, verifica-se o seu tamanho e depois envia-se o cumprimento e logo de seguida a mensagem. Para tal foi criada a função __SendAction()__ para efetuar os envios das ações.
+__5) Enviar dados para o servidor__, é semelhante ao enviar dados do servidor para o cliente, convertendo a mensagem em Json, depois em bytes, verifica-se o seu tamanho e depois envia-se o comprimento e logo de seguida a mensagem. Para tal foi criada a função __SendAction()__ para efetuar os envios das ações.
 
 ```
 public void SendAction(string action = "", string target = "", int playerid = 0, string[] extra = null)
@@ -559,7 +570,7 @@ public void AAttack(string unit, int enemID, string[] amount)
     ChangePlayerEnergyBar(Convert.ToInt16(amount[2]), Convert.ToInt16(amount[1]));
 }
 ```
-- __killed__ chama a função AKilled() e é muito parecida com a de attack, o que muda é a unidade que foi atacada perdeu toda a vida e esta é rodada 90º para parecer estar mosta.
+- __killed__ chama a função AKilled() e é muito parecida com a de attack, o que muda é a unidade que foi atacada perdeu toda a vida e esta é rodada 90º para parecer estar morta.
 ```
 public void AKilled(string unit, int enemID, string[] amount)
 {
@@ -607,7 +618,7 @@ public void ANextTurn(int nextPlayerID, string playerRefillEnergy)
 }
 ```
 
-Também foram criadas outras funções que são chamadas apenas por cada cliente, sendo estas o mudar o UI de cada jogador e que se aplica tanto à energia como à vida dos jogadores, estas funções vão buscar os sliders e modifica os seus valores para o valores vindos do servidor, no caso da vida restante ou da energia que ainda temos. Isto aplica-se à UI de cada prefab como também ao UI que temos no nosso ecrã que corresponde apenas ao nosso personagem.
+Também foram criadas outras funções que são chamadas apenas por cada cliente, sendo estas o mudar o UI de cada jogador e que se aplica tanto à energia como à vida dos jogadores, estas funções vão buscar os sliders e modifica os seus valores para os valores vindos do servidor, no caso da vida restante ou da energia que ainda temos. Isto aplica-se à UI de cada prefab como também ao UI que temos no nosso ecrã que corresponde apenas ao nosso personagem.
 - ChangePlayerEnergyBar() referente à barra de energia
 ```
 public void ChangePlayerEnergyBar(int playerID, int energyLeft)
@@ -657,7 +668,7 @@ public void ChangeUnitHPBar(string unit, int playerID, int hpLeft)
 }
 ```
 
-Referente ao movimento do personagem, existem vários botoes no ecrã de cada cliente, em que cada um deles envia uma ação para o servidor.
+Referente ao movimento do personagem, existem vários botões no ecrã de cada cliente, em que cada um deles envia uma ação para o servidor.
 ```
 //Movement
 public void goUp()
@@ -717,14 +728,15 @@ public void CleanTextBox()
 ```
 
 # Análise de largura de banda
-Dentro do programa do lado do servidor foram colocadas duas variáveis para armazenar os bytes que são tanto _enviados_ como _recebidos_, após fazer vários testes, e analizando o maior número de jogadas que um jogador pode fazer (neste caso andar 5 vezes numa direção), o máximo de bytes gasto numa ronda foi de mais ou menos __4217 bytes__ enviados e __780 bytes__ recebidos.
+No programa do lado do servidor foram colocadas duas variáveis para armazenar os bytes que são tanto _enviados_ como _recebidos_, após fazer vários testes, e analisando o maior número de jogadas que um jogador pode fazer (neste caso andar 5 vezes numa direção), o máximo de bytes gasto numa ronda foi de mais ou menos __4217 bytes__ enviados e __780 bytes__ recebidos.
 No caso deste jogo está desenhado apenas para 5 rondas, fazendo uma estimativa máxima do envio de dados de __21085 bytes__ e de __3900 bytes__ recebidos, dando um total de __24985 bytes__ enviados de entre o servidor e os clientes por sessão de jogo.
 
-Analisando alguns sites e os seus preços, existe por exemplo a normcore.io que empresta servidres gratuitos até 120GB de banda larga por mês com o plano grátis (N.Public). mas se formos ves o plano (Pago) Pro que é 41.60€ por 3TB e este jogo apenas usa 24985 bytes, daria para milhões de partidas com este plano
+Analisando alguns sites e os seus preços, existe, por exemplo a normcore.io que empresta servidores gratuitos até 120GB de banda larga por mês com o plano grátis (N.Public). Mas se formos ver o plano (Pago) Pro que é 41.60€ por 3TB e este jogo apenas usa 24985 bytes, daria para milhões de partidas com este plano
 
 # Limitações 
-Neste caso como por o jogo online é uma das maiores limitações, da maneira que o jogo está criado, não tendo sido ponderado e criado desde inicio com esse intuito. mas no máximo quando se inicia o servidor este cria o endpoint para o "localhost", se estivesse a correr num servidor, seria possivel obter o IP do servidor, substituir pelo localhost e iniciar o servidor.
-Por outro lado os Clientes também teriam de saber qual é esse IP para se poderem conectar e de momento não existe uma lista de servidores no jogo ou uma maneira de inserir o IP manualmente para se poder conectar.
+Neste caso como por o jogo online é uma das maiores limitações, da maneira que o jogo está criado, não tendo sido ponderado e criado desde inicio com esse intuito. 
+Mas no máximo quando se inicia o servidor este cria o endpoint para o "localhost", se estivesse a correr num servidor, seria possivel obter o IP do servidor, substituir pelo localhost e iniciar o servidor.
+Por outro lado, os Clientes também teriam de saber qual é esse IP para se poderem conectar e de momento não existe uma lista de servidores no jogo ou uma maneira de inserir o IP manualmente para se poder conectar.
 
 # Diagrama de arquitectura de redes
 
@@ -736,29 +748,20 @@ Por outro lado os Clientes também teriam de saber qual é esse IP para se poder
 
 ## Bibliography
 
-  
-
 Sistemas de Redes para Jogos, material das aulas. Aula03
 
-  
-
 Aulas de Sistemas de Redes para Jogos 2023/24,
-
 https://github.com/VideojogosLusofona/srj_2023_aulas/tree/main
 
-  
-
 Threads:
-
 https://learn.microsoft.com/pt-pt/dotnet/standard/threading/using-threads-and-threading
 
   
 
 Sockets:
-
 https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.socket?view=net-9.0
-
 https://discussions.unity.com/
+
 JSON:
 https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/how-to
 https://docs.unity3d.com/6000.1/Documentation/ScriptReference/JsonUtility.html
