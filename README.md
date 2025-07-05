@@ -751,17 +751,21 @@ Por outro lado, os Clientes também teriam de saber qual é esse IP para se pode
 Sistemas de Redes para Jogos, material das aulas. Aula03
 
 Aulas de Sistemas de Redes para Jogos 2023/24,
+
 https://github.com/VideojogosLusofona/srj_2023_aulas/tree/main
 
 Threads:
+
 https://learn.microsoft.com/pt-pt/dotnet/standard/threading/using-threads-and-threading
 
   
 
 Sockets:
+
 https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.socket?view=net-9.0
 https://discussions.unity.com/
 
 JSON:
+
 https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/how-to
 https://docs.unity3d.com/6000.1/Documentation/ScriptReference/JsonUtility.html
