@@ -57,8 +57,8 @@ public class HostConnect : MonoBehaviour
     IEnumerator LaunchConnect()
     {
         //Launch headless Server (with head to test)
-        firstProc.StartInfo.FileName = "C:\\Users\\BlankyCat\\Desktop\\LP1ConsoleTemplate\\RedesSocketServer\\SocketServer\\bin\\Debug\\net8.0\\SocketServer.exe";
-        //firstProc.StartInfo.FileName = ".\\SocketServer\\bin\\Debug\\net8.0\\SocketServer.exe";
+        //firstProc.StartInfo.FileName = "C:\\Users\\BlankyCat\\Desktop\\LP1ConsoleTemplate\\RedesSocketServer\\SocketServer\\bin\\Debug\\net8.0\\SocketServer.exe";
+        firstProc.StartInfo.FileName = ".\\SocketServer\\bin\\Debug\\net8.0\\SocketServer.exe";
         firstProc.EnableRaisingEvents = true;
         firstProc.StartInfo.CreateNoWindow = false;
         firstProc.Start();

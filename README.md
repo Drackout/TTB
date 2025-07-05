@@ -717,8 +717,8 @@ public void CleanTextBox()
 ```
 
 # Análise de largura de banda
-Dentro do programa do lado do servidor foram colocadas duas variáveis para armazenar os bytes que são tanto _enviados_ como _recebidos_, após fazer vários testes, e analizando o maior número de jogadas que um jogador pode fazer (neste caso andar 5 vezes numa direção), o máximo de bytes gasto numa ronda foi de __4217 bytes__ enviados e __780 bytes__ recebidos.
-No caso deste jogo está desenhado apenas para 5 rondas, fazendo uma estimativa máxima do envio de dados de __21085 bytes__ e de __3900 bytes__ recebidos, dando um total de __24985 bytes__ enviados de entre o servidor e os clientes.
+Dentro do programa do lado do servidor foram colocadas duas variáveis para armazenar os bytes que são tanto _enviados_ como _recebidos_, após fazer vários testes, e analizando o maior número de jogadas que um jogador pode fazer (neste caso andar 5 vezes numa direção), o máximo de bytes gasto numa ronda foi de mais ou menos __4217 bytes__ enviados e __780 bytes__ recebidos.
+No caso deste jogo está desenhado apenas para 5 rondas, fazendo uma estimativa máxima do envio de dados de __21085 bytes__ e de __3900 bytes__ recebidos, dando um total de __24985 bytes__ enviados de entre o servidor e os clientes por sessão de jogo.
 
 Analisando alguns sites e os seus preços, existe por exemplo a normcore.io que empresta servidres gratuitos até 120GB de banda larga por mês com o plano grátis (N.Public). mas se formos ves o plano (Pago) Pro que é 41.60€ por 3TB e este jogo apenas usa 24985 bytes, daria para milhões de partidas com este plano
 
@@ -759,9 +759,6 @@ Sockets:
 https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.socket?view=net-9.0
 
 https://discussions.unity.com/
-
 JSON:
-
 https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/how-to
-
 https://docs.unity3d.com/6000.1/Documentation/ScriptReference/JsonUtility.html
