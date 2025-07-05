@@ -7,19 +7,23 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections;
 using TMPro;
 using System.Diagnostics;
+using TTB.Assets.Scripts;
+using System.Security.Cryptography.X509Certificates;
+using Unity.Mathematics;
 
-public class CliConnect1 : MonoBehaviour
+
+public class HostConnect : MonoBehaviour
 {
     private TcpClient client;
-    private NetworkStream stream;
     private Thread receiveThread;
     private bool isConnected = false;
     string server = "localhost";
     public IPEndPoint remoteEP;
     public Socket socket;
-    private GameObject playerPosition;
+    //private GameObject playerPosition;
     public GameObject startGameScreen;
     public Transform PlayerList;
     public GameObject PlayerListPrefab;
@@ -27,26 +31,38 @@ public class CliConnect1 : MonoBehaviour
     public TextMeshProUGUI DisplayID;
     public GameObject[] playerPrefabs;
     public GameObject[] enemyPrefabs;
-    private static int playerId = 1; //IT OVERWRITES everytime for no apparent reason? 
+    private static int playerId; //= 1;
     public GameObject gameContols;
     public Button[] gameButtons;
     private int tryConn = 0;
-    
+    Process firstProc = new Process();
+    public Slider energySlider;
+    public Slider healthSlider;
+    public Image myIcon;
+    public TextMeshProUGUI enemyName;
+    public LayerMask clickLayerMask;
+    public Image turnIcon;
+
 
     // Run things in main thread instead of the Clients
     private static readonly Queue<Action> mainThreadActions = new Queue<Action>();
-    
+    private static readonly Queue<string> uiMessages = new Queue<string>();
+    readonly object queueLock = new object();
+
     void Start()
     {
+        StartCoroutine(LaunchConnect());
+    }
+
+    IEnumerator LaunchConnect()
+    {
         //Launch headless Server (with head to test)
-        Process firstProc = new Process();
-        firstProc.StartInfo.FileName = ".\\SocketServer\\bin\\Debug\\net8.0\\SocketServer.exe";
+        firstProc.StartInfo.FileName = "C:\\Users\\BlankyCat\\Desktop\\LP1ConsoleTemplate\\RedesSocketServer\\SocketServer\\bin\\Debug\\net8.0\\SocketServer.exe";
+        //firstProc.StartInfo.FileName = ".\\SocketServer\\bin\\Debug\\net8.0\\SocketServer.exe";
         firstProc.EnableRaisingEvents = true;
         firstProc.StartInfo.CreateNoWindow = false;
         firstProc.Start();
-
-        // wait 2 secs then connects the "host/player1"
-        Thread.Sleep(2000);
+        yield return new WaitForSeconds(2f);
 
         while (!isConnected && tryConn < 10)
         {
@@ -57,15 +73,16 @@ public class CliConnect1 : MonoBehaviour
             catch
             {
                 tryConn++;
-                Thread.Sleep(1000);
             }
+            yield return new WaitForSeconds(1f);
         }
     }
+
 
     void Awake()
     {
         QualitySettings.vSyncCount = 1;
-        Application.targetFrameRate = 30;
+        //Application.targetFrameRate = 30;
         Screen.SetResolution(1280, 720, false);
         Screen.fullScreen = false;
         gameContols.SetActive(false);
@@ -75,8 +92,6 @@ public class CliConnect1 : MonoBehaviour
         }
     }
 
-
-    ///// had help with this to run outside Client thread
     void Update()
     {
         lock (mainThreadActions)
@@ -86,6 +101,42 @@ public class CliConnect1 : MonoBehaviour
                 mainThreadActions.Dequeue().Invoke();
             }
         }
+        lock (queueLock)
+        {
+            while (uiMessages.Count > 0)
+            {
+                string message = uiMessages.Dequeue();
+                infoBox.text += "\n" + message;
+            }
+        }
+
+        // Get enemy clicked name
+        if (Input.GetMouseButtonDown(0))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            if (Physics.Raycast(ray, out RaycastHit hit, 100f, clickLayerMask))
+            {
+                Transform enemyClick = hit.transform;
+
+                // Go up the hierarchy to get the root GameObject (e.g. Player1)
+                while (enemyClick.parent != null)
+                {
+                    enemyClick = enemyClick.parent;
+                }
+
+                string enemyClickName = enemyClick.name;
+                ServerMessage("Unit selected: " + enemyClickName);
+
+                if (enemyName != null)
+                    enemyName.text = enemyClickName;
+            }
+        }
+
+        if (enemyName.text == "Enemy Name" || enemyName.text == "")
+            gameButtons[4].interactable = false;
+        else
+            gameButtons[4].interactable = true;
     }
     public static void RunOnMainThread(Action action)
     {
@@ -94,7 +145,13 @@ public class CliConnect1 : MonoBehaviour
             mainThreadActions.Enqueue(action);
         }
     }
-    /////
+    void ServerMessage(string message)
+    {
+        lock (queueLock)
+        {
+            uiMessages.Enqueue(message);
+        }
+    }
 
 
     // Establishes the TCP connection with the server
@@ -119,174 +176,211 @@ public class CliConnect1 : MonoBehaviour
             //socket.Blocking = false;
             socket.Connect(remoteEP);
 
-            // Initialize the NetworkStream to send/receive data over the socket
-            // Makes it easy to send/Receive data
-            stream = new NetworkStream(socket);
             isConnected = true;
-            
+
             // Start the thread
             receiveThread = new Thread(ReceiveData);
             receiveThread.IsBackground = true;
             receiveThread.Start();
-
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            infoBox.text += "\nError connecting to server: " + ex.Message;
+            //infoBox.text += "\nError connecting to server: " + ex.Message;
+            ServerMessage("Error connecting to server: " + e.Message);
         }
     }
 
     // Receives data from the server and updates the UI
     void ReceiveData()
     {
-        byte[] buffer = new byte[64];
-        int bytesReceived;
+        //infoBox.text += "\nConnected: "+isConnected+"\n";
+        //infoBox.text += "aaaaaaConnected, thread starting\n";
+        //byte[] buffer = new byte[64];
+        //int bytesReceived;
+
 
         while (isConnected)
         {
             try
             {
-                bytesReceived = stream.Read(buffer, 0, buffer.Length);
-                if (bytesReceived == 0) break;  // Connection closed
+                // VALIDATION OF DATA RECEIVED, if more than should come
+                /////////////////////////APLICAR ISTO AO SERVIDOOOOOOOOOOOOOOOOOOR
+                byte[] lenBytes = new byte[4];
+                int bytesReceived = Receive(lenBytes);
+                //string msg1;
 
-                string msg = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
-                infoBox.text += "\nServer: " + msg;
-
-
-                // Handle server messages and update game and UI
-                if (msg.Contains("PlayerID"))
+                if (bytesReceived == 4)
                 {
-                    int incomeID = Convert.ToInt16(msg.Split(':')[1]);
-                    RunOnMainThread(() =>
-                    {
-                        playerId = incomeID;
-                        DisplayID.text = playerId.ToString();
-                        infoBox.text += $"\nIam player {playerId}";
+                    UInt32 commandLen = BitConverter.ToUInt32(lenBytes, 0);
 
-                        for (int i = 0; i < playerId - 1; i++)
+                    var commandBytes = new byte[commandLen];
+                    bytesReceived = Receive(commandBytes);
+
+
+                    //msg1 = Encoding.ASCII.GetString(commandBytes, 0, bytesReceived);
+                    //infoBox.text += "\n444Server: " + msg1;
+                    //ServerMessage("444Server: " + msg1);
+                    //ServerMessage("1234: " + bytesReceived+ " _ " + commandLen);
+
+                    // check if received data equals expected length
+                    if (bytesReceived == commandLen)
+                    {
+                        string msg = Encoding.UTF8.GetString(commandBytes);
+
+                        UnityEngine.Debug.Log("Received Raw: " + msg);
+
+                        try
                         {
-                            Instantiate(PlayerListPrefab, PlayerList);
+                            ServerMessage serverMsg = null;
+
+                            try
+                            {
+                                serverMsg = JsonUtility.FromJson<ServerMessage>(msg);
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine("Invalid json: " + e);
+                                continue;
+                            }
+
+                            if (serverMsg != null)
+                            {
+                                int SrvID = serverMsg.playerid;
+                                string SrvAct = serverMsg.action;
+                                string SrvMsg = serverMsg.message;
+                                string[] SrvExtra = serverMsg.extra;
+                                // ServerMessage($"Server Message - Player: {serverMsg.playerId} Action: {serverMsg.action}, Message: {serverMsg.message}");
+
+                                // Handle Server messages
+                                if (SrvAct != "")
+                                {
+                                    switch (SrvAct)
+                                    {
+                                        case "getid":
+                                            AGetID(SrvID);
+                                            continue;
+
+                                        case "updateplayerlist":
+                                            RunOnMainThread(() => Instantiate(PlayerListPrefab, PlayerList));
+                                            continue;
+
+                                        case "gamestart":
+                                            AGameStart(SrvID);
+                                            continue;
+
+                                        case "canmove":
+                                            ACanMove(SrvID, SrvMsg, SrvExtra);
+                                            continue;
+
+                                        case "attack":
+                                            AAttack(SrvMsg, SrvID, SrvExtra);
+                                            continue;
+
+                                        case "killed":
+                                            AKilled(SrvMsg, SrvID, SrvExtra);
+                                            continue;
+
+                                        case "nextturn":
+                                            ANextTurn(SrvID, SrvMsg);
+                                            continue;
+
+                                    }
+                                }
+                                else
+                                {
+                                    ServerMessage(serverMsg.message);
+                                }
+
+                            }
                         }
-                    });
-                }
-                else if (msg.Contains("updatePlayerList"))
-                {
-                    infoBox.text += "MY ID: " + playerId;
-                    RunOnMainThread(() => Instantiate(PlayerListPrefab, PlayerList));
-                }
-                else if (msg.Contains("Game started"))
-                {
-                    startGameScreen.SetActive(false);
-                    gameContols.SetActive(true);
-                    infoBox.text += "\nGame started! Player " + msg.Split(':')[1] + "'s turn.";
-
-                    if (playerId == Convert.ToInt16(msg.Split(':')[1]))
-                    {
-                        infoBox.text += "\nIt's My turn :)";
-                        foreach (Button btn in gameButtons)
+                        catch (Exception e)
                         {
-                            btn.interactable = true;
-                        }
-                    }
-
-                    playerPosition.transform.position = transform.position;
-                }
-                else if (msg.Contains("Not your turn"))
-                {
-                    infoBox.text += "\n" + msg;
-                }
-                else if (msg.Contains("No Energy"))
-                {
-                    //Already writes the message
-                    //infoBox.text += "\n"+msg;
-                }
-                else if (msg.Contains("Waiting for Host"))
-                {
-                    //Debug.Log(message);
-                    infoBox.text += "\n" + msg;
-                }
-                else if (msg.Contains("CanMove"))
-                {
-                    infoBox.text += "\n" + msg;
-                    if (msg.Split(':')[1] == "up")
-                    {
-                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position = new Vector3(
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.x,
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.y,
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.z + Convert.ToInt16(msg.Split(':')[2]));
-                    }
-                    else if (msg.Split(':')[1] == "down")
-                    {
-                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position = new Vector3(
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.x,
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.y,
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.z - Convert.ToInt16(msg.Split(':')[2]));
-                    }
-                    else if (msg.Split(':')[1] == "left")
-                    {
-                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position = new Vector3(
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.x - Convert.ToInt16(msg.Split(':')[2]),
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.y,
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.z);
-                    }
-                    else if (msg.Split(':')[1] == "right")
-                    {
-                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position = new Vector3(
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.x + Convert.ToInt16(msg.Split(':')[2]),
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.y,
-                                                                        playerPrefabs[Convert.ToInt16(msg.Split(':')[4])].transform.position.z);
-                    }
-
-                }
-                else if (msg.Contains("Next turn"))
-                {
-                    infoBox.text += "\n----- NEW TURN -----";
-                    if (playerId == Convert.ToInt16(msg.Split(':')[1]))
-                    {
-                        gameContols.SetActive(true);
-                        infoBox.text += "\nIt's My turn :)";
-                        foreach (Button btn in gameButtons)
-                        {
-                            btn.interactable = true;
+                            ServerMessage("Error from json received: " + e);
+                            throw;
                         }
                     }
                 }
-                else
-                {
-                    //Debug.Log(message);
-                }
-
             }
             catch (SocketException e)
             {
                 if (e.SocketErrorCode != SocketError.WouldBlock)
                 {
+                    //infoBox.text += "CATCH: "+e;
+                    ServerMessage("CATCH" + e);
                     throw e;
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error getting data: " + e.Message);
+                //infoBox.text += "Error getting data: " + e.Message;
+                ServerMessage("Error getting data: " + e.Message);
             }
         }
-        
+
+    }
+
+
+    int Receive(byte[] data, bool accountForLittleEndian = true)
+    {
+        try
+        {
+            // Normal path - received something
+            int nBytes = socket.Receive(data);
+
+            if (accountForLittleEndian && (!BitConverter.IsLittleEndian))
+                Array.Reverse(data);
+
+            return nBytes;
+        }
+
+        catch (SocketException e)
+        {
+            if (e.SocketErrorCode == SocketError.WouldBlock)
+            {
+                return 0; // no receive data, return 0
+            }
+            else
+            {
+
+                // Error => log it
+                //Debug.LogError(e);
+            }
+        }
+        return -1; // Return -1 if there's an error
     }
 
 
 
 
-
-
     // Sends action to server (move, attack, etc.)
-    public void SendAction(string action, string target = "")
+    public void SendAction(string action = "", string target = "", int playerid = 0, string[] extra = null)
     {
+        if (extra == null)
+            extra = new string[0];
+
         if (!isConnected) return;
 
-        string message = $"{playerId}:{action}:{target}";
-        byte[] data = Encoding.ASCII.GetBytes(message);
-        stream.Write(data, 0, data.Length);
-        //Debug.Log("Sent: " + message);
-        infoBox.text += "\nSent: " + message;
+        PlayerCommandSend msg = new PlayerCommandSend()
+        {
+            playerid = playerid,
+            action = action.ToLower(),
+            target = target.ToLower(),
+            extra = extra
+        };
+        UnityEngine.Debug.Log($"SA_ playerId: {msg.playerid}, action: '{msg.action}', target: '{msg.target}', extra: '{msg.extra}'");
+
+        // converter em json
+        string json = JsonUtility.ToJson(msg); // using System.Text.Json
+        byte[] data = Encoding.UTF8.GetBytes(json);
+        byte[] dataLen = BitConverter.GetBytes((UInt32)data.Length);
+
+        UnityEngine.Debug.Log("SA JSON: " + json);
+
+        socket.Send(dataLen);
+        socket.Send(data);
+        //ServerMessage("Sent: " + json);
+
+        //SEEEEEEEEEEEEEEEND TWICE.. 4 bytes.. then the message.. like receiving
     }
 
 
@@ -299,65 +393,231 @@ public class CliConnect1 : MonoBehaviour
         }
         else
         {
-            infoBox.text += "\nOnly Player 1 can launch the game.";
+            //infoBox.text += "\nOnly Player 1 can launch the game.";
+            ServerMessage("Only Player 1 can launch the game.");
         }
     }
 
     //Movement
     public void goUp()
     {
-        SendAction("move", "up");
+        SendAction("move", "up", playerId);
     }
-    
+
     public void goDown()
     {
-        SendAction("move", "down");
+        SendAction("move", "down", playerId);
     }
-    
+
     public void goLeft()
     {
-        SendAction("move", "left");
+        SendAction("move", "left", playerId);
     }
-    
+
     public void goRight()
     {
-        SendAction("move", "right");
+        SendAction("move", "right", playerId);
     }
-    
-    // Attack
+
     public void OnAttackClicked()
     {
-        // IMPROVE
-        // Just attacks enemy1
-        SendAction("attack");
+        SendAction("attack", enemyName.text, playerId);
     }
-    
-    // End turn
+
     public void endTurn()
     {
-        //foreach (Button btn in gameButtons)
-        //{
-        //    btn.interactable = false;
-        //}
-        SendAction("endTurn");
+        SendAction("endturn");
     }
 
     // Clean up the connection b4 exit
     void OnApplicationQuit()
     {
         if (receiveThread != null && receiveThread.IsAlive)
-        {
             receiveThread.Abort();
-        }
-
-        if (stream != null)
-        {
-            stream.Close();
-        }
 
         if (client != null)
-        {
             client.Close();
+    }
+
+    public void CleanTextBox()
+    {
+        infoBox.text = "";
+    }
+
+    public void StopServer()
+    {
+        firstProc.Kill();
+    }
+
+    public void AGetID(int newID)
+    {
+        RunOnMainThread(() =>
+        {
+            playerId = newID;
+            if (playerId == 1)
+                myIcon.color = new Color32(56, 56, 136, 255);
+            else
+                myIcon.color = new Color32(54, 156, 54, 255);
+
+            DisplayID.text = playerId.ToString();
+            ServerMessage($"Iam player {playerId}");
+
+            for (int i = 0; i < playerId - 1; i++)
+            {
+                Instantiate(PlayerListPrefab, PlayerList);
+            }
+        });
+    }
+
+    public void AGameStart(int playerTurn)
+    {
+        RunOnMainThread(() =>
+        {
+            CleanTextBox();
+            ServerMessage($"Game started! Player {playerTurn} turn.");
+            RunOnMainThread(() => {turnIcon.color = new Color32(56, 56, 136, 255);});
+            startGameScreen.SetActive(false);
+            gameContols.SetActive(true);
+
+            if (playerId == playerTurn)
+            {
+                ServerMessage("It's My turn :)");
+                foreach (Button btn in gameButtons)
+                {
+                    btn.interactable = true;
+                }
+            }
+        });
+    }
+
+    public void ACanMove(int player, string direction, string[] amount)
+    {
+        int amount0 = Convert.ToInt16(amount[0]);
+        Vector3 movement = Vector3.zero;
+
+        switch (direction)
+        {
+            case "up":
+                movement = Vector3.forward * amount0;
+                break;
+
+            case "down":
+                movement = Vector3.back * amount0;
+                break;
+
+            case "left":
+                movement = Vector3.left * amount0;
+                break;
+
+            case "right":
+                movement = Vector3.right * amount0;
+                break;
+
+            default:
+                movement = Vector3.zero;
+                break;
         }
+        ChangePlayerEnergyBar(player, Convert.ToInt16(amount[1]));
+        RunOnMainThread(() => playerPrefabs[player].transform.position += movement);
+    }
+
+    public void AAttack(string unit, int enemID, string[] amount)
+    {
+        ChangeUnitHPBar(unit, enemID, Convert.ToInt16(amount[0]));
+        ChangePlayerEnergyBar(Convert.ToInt16(amount[2]), Convert.ToInt16(amount[1]));
+    }
+
+    public void AKilled(string unit, int enemID, string[] amount)
+    {
+        // Remove HP till 0
+        // Animation (fall or just rotate)
+        // Remove from Enemy or Player List ...TODO
+        ChangeUnitHPBar(unit, enemID, Convert.ToInt16(amount[0]));
+        ChangePlayerEnergyBar(Convert.ToInt16(amount[2]), Convert.ToInt16(amount[1]));
+        //For now will just rotate
+        RunOnMainThread(() =>
+        {
+            Transform unitTrans = null;
+
+            if (unit == "player")
+                unitTrans = playerPrefabs[enemID].transform;
+            else if (unit == "enemy")
+                unitTrans = enemyPrefabs[enemID].transform;
+
+            unitTrans.rotation = quaternion.Euler(90f, 0f, 0f);
+        });
+    }
+
+
+    public void ANextTurn(int nextPlayerID, string playerRefillEnergy)
+    {
+        //infoBox.text += "\n----- NEW TURN -----";
+        //ServerMessage("----- NEW TURN -----");
+        ServerMessage($"\n----- Player {nextPlayerID} Turn! -----");
+        RunOnMainThread(() =>
+        {
+            if (nextPlayerID == 1)
+                turnIcon.color = new Color32(56, 56, 136, 255);
+            else
+                turnIcon.color = new Color32(54, 156, 54, 255);
+        });
+
+        ChangePlayerEnergyBar(nextPlayerID, Convert.ToInt16(playerRefillEnergy));
+        if (playerId == nextPlayerID)
+        {
+            ServerMessage("It's My turn :)");
+            RunOnMainThread(() =>
+            {
+                gameContols.SetActive(true);
+                foreach (Button btn in gameButtons)
+                {
+                    btn.interactable = true;
+                }
+            });
+        }
+    }
+
+    public void ChangePlayerEnergyBar(int playerID, int energyLeft)
+    {
+        RunOnMainThread(() =>
+        {
+            
+            Slider[] sliders = playerPrefabs[playerID].GetComponentsInChildren<Slider>();
+            foreach (Slider s in sliders)
+            {
+                if (s.name == "Energybar")
+                {
+                    s.value = energyLeft;
+                    if (playerID == playerId)
+                    {
+                        energySlider.value = energyLeft;
+                    }
+                }
+            }
+        });
+    }
+    
+    public void ChangeUnitHPBar(string unit, int playerID, int hpLeft)
+    {
+        RunOnMainThread(() =>
+        {
+            Slider[] sliders = null;
+            if (unit == "player")
+                sliders = playerPrefabs[playerID].GetComponentsInChildren<Slider>();
+            else if (unit == "enemy")
+                sliders = enemyPrefabs[playerID].GetComponentsInChildren<Slider>();
+
+            foreach (Slider s in sliders)
+            {
+                if (s.name == "HPbar")
+                {
+                    s.value = hpLeft;
+                    if (playerID == playerId)
+                    {
+                        healthSlider.value = hpLeft;
+                    }
+                }
+            }
+        });
     }
 }
